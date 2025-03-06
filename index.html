@@ -1,11 +1,4 @@
-// 問題3の選択肢をシャープ/フラットで統一
-      const getFormattedNoteOption = (notes) => {
-        if (Array.isArray(notes)) {
-          // 特殊な文字を置き換えずにそのまま表示
-          return notes.join('/');
-        }
-        return notes;
-      };<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -45,7 +38,7 @@
       11: 'B'
     };
     
-    // 関係性のマッピング（度数）- "-◯"表記を削除
+    // 関係性のマッピング（度数）
     const relationMapping = [
       { number: 0, relations: ['1度', '完全1度'] },
       { number: 1, relations: ['短2度', '♭9th'] },
@@ -119,6 +112,15 @@
         title: "５：ランダム",
         description: "上記からランダムに出題"
       }
+    };
+    
+    // 問題3の選択肢をシャープ/フラットで統一
+    const getFormattedNoteOption = (notes) => {
+      if (Array.isArray(notes)) {
+        // 特殊な文字を置き換えずにそのまま表示
+        return notes.join('/');
+      }
+      return notes;
     };
     
     // 問題のタイプを定義
@@ -264,12 +266,6 @@
       return normalized;
     };
     
-    // ♭とbの変換、#と＃の変換を行う関数 - 選択制になったため不要
-    const convertNotation = (answer) => {
-      // 変換せずそのまま返す
-      return answer;
-    };
-    
     // 回答比較関数
     const compareAnswers = (userAnswer, correctAnswer) => {
       // 数字の場合の特別処理
@@ -282,17 +278,11 @@
       
       // ユーザーの回答を正規化
       const normalizedUserAnswer = normalizeAnswer(userAnswer);
-      const convertedUserAnswer = convertNotation(normalizedUserAnswer);
       
       // どれかの正解と一致するか確認
       return correctAnswers.some(answer => {
         const normalizedCorrectAnswer = normalizeAnswer(answer);
-        const convertedCorrectAnswer = convertNotation(normalizedCorrectAnswer);
-        
-        return (
-          convertedUserAnswer === convertedCorrectAnswer ||
-          normalizedUserAnswer === normalizedCorrectAnswer
-        );
+        return normalizedUserAnswer === normalizedCorrectAnswer;
       });
     };
 
