@@ -13,7 +13,6 @@
 </head>
 <body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
   <div id="app" class="container mx-auto max-w-md"></div>
-
   <!-- スクリプトを直接埋め込み -->
   <script type="text/babel">
     // 音と数字のマッピング
@@ -22,7 +21,7 @@
       'F': 5, 'F#': 6, 'Gb': 6, 'G♭': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A♭': 8, 'A': 9,
       'A#': 10, 'Bb': 10, 'B♭': 10, 'B': 11
     };
-
+    
     // 数字から音へのマッピング
     const numberToNote = {
       0: 'C', 
@@ -38,30 +37,47 @@
       10: ['A#', 'B♭'], 
       11: 'B'
     };
-
+    
     // 関係性のマッピング（度数）
     const relationMapping = [
-      { number: 0, relations: ['1度'] },
+      { number: 0, relations: ['1度', '完全1度'] },
       { number: 1, relations: ['短2度', '♭9th'] },
-      { number: 2, relations: ['2度', '9th'] },
-      { number: 3, relations: ['短3度', '#9th', 'm3'] },
-      { number: 4, relations: ['3度', '長3度', 'M3'] },
+      { number: 2, relations: ['2度', '長2度', '9th'] },
+      { number: 3, relations: ['短3度', '#9th', 'm3', '-3'] },
+      { number: 4, relations: ['3度', '長3度', 'M3', '△3', '3rd'] },
       { number: 5, relations: ['4度', '完全4度', '11th'] },
-      { number: 6, relations: ['減5度', '♭5'] },
-      { number: 7, relations: ['5度', '完全5度'] },
-      { number: 8, relations: ['短6度', '♭13th'] },
-      { number: 9, relations: ['6度', '13th', '6th'] },
-      { number: 10, relations: ['短7度', 'm7', '-7'] },
-      { number: 11, relations: ['7度', 'M7', '△7'] },
-      { number: 12, relations: ['8度'] },
+      { number: 6, relations: ['増4度', '減5度', '♭5'] },
+      { number: 7, relations: ['5度', '完全5度', '5th'] },
+      { number: 8, relations: ['増5度', '短6度', '♭13th'] },
+      { number: 9, relations: ['6度', '長6度', '13th', '6th'] },
+      { number: 10, relations: ['増6度', '短7度', 'm7', '-7'] },
+      { number: 11, relations: ['7度', '長7度', 'M7', '△7'] },
+      { number: 12, relations: ['8度', '完全8度'] },
     ];
 
+    // 度数選択肢
+    const degreeOptions = [
+      "1度", "完全1度",
+      "短2度", 
+      "長2度", "2度",
+      "短3度",
+      "長3度", "3度",
+      "完全4度", "4度",
+      "増4度", "減5度",
+      "完全5度", "5度",
+      "増5度", "短6度",
+      "長6度", "6度",
+      "増6度", "短7度",
+      "長7度", "7度",
+      "完全8度", "8度"
+    ];
+    
     // 全ての音のリスト
     const allNotes = Object.keys(noteToNumber);
-
+    
     // 全ての関係のリスト（度数など）
     const allRelations = relationMapping.flatMap(item => item.relations);
-
+    
     // 問題タイプの説明
     const questionTypeInfo = {
       1: {
@@ -85,7 +101,7 @@
         description: "上記からランダムに出題"
       }
     };
-
+    
     // 問題のタイプを定義
     const questionTypes = [
       {
@@ -162,7 +178,7 @@
         }
       }
     ];
-
+    
     // 回答チェック用の正規化関数
     const normalizeAnswer = (answer) => {
       // 全角を半角に変換
@@ -175,14 +191,14 @@
       
       return normalized;
     };
-
+    
     // ♭とbの変換、#と＃の変換を行う関数
     const convertNotation = (answer) => {
       // ♭をbに、♯を#に変換
       let converted = answer.replace(/♭/g, 'b').replace(/♯/g, '#');
       return converted;
     };
-
+    
     // 回答比較関数
     const compareAnswers = (userAnswer, correctAnswer) => {
       // 数字の場合の特別処理
@@ -209,6 +225,44 @@
       });
     };
 
+    // 数字ボタンコンポーネント
+    const NumberButtons = ({ onSelect, disabled }) => {
+      const numbers = Array.from({ length: 12 }, (_, i) => i);
+      
+      return (
+        <div className="grid grid-cols-4 gap-2 mb-4">
+          {numbers.map(num => (
+            <button
+              key={num}
+              onClick={() => onSelect(num.toString())}
+              disabled={disabled}
+              className="bg-blue-100 hover:bg-blue-200 py-3 px-4 rounded disabled:bg-gray-200 disabled:text-gray-500"
+            >
+              {num}
+            </button>
+          ))}
+        </div>
+      );
+    };
+
+    // 度数選択ボタンコンポーネント
+    const DegreeButtons = ({ onSelect, disabled }) => {
+      return (
+        <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
+          {degreeOptions.map(degree => (
+            <button
+              key={degree}
+              onClick={() => onSelect(degree)}
+              disabled={disabled}
+              className="bg-green-100 hover:bg-green-200 py-2 px-2 rounded text-sm disabled:bg-gray-200 disabled:text-gray-500"
+            >
+              {degree}
+            </button>
+          ))}
+        </div>
+      );
+    };
+    
     const MusicTheoryQuiz = () => {
       const [selectedQuestionType, setSelectedQuestionType] = React.useState(null);
       const [currentQuestion, setCurrentQuestion] = React.useState(null);
@@ -328,17 +382,31 @@
             <p className="text-lg font-medium mb-2">問題:</p>
             <p className="text-xl mb-4">{currentQuestion?.question}</p>
             
-            <div className="mb-4">
-              <input
-                type="text"
-                value={userAnswer}
-                onChange={(e) => setUserAnswer(e.target.value)}
-                onKeyPress={handleKeyPress}
-                disabled={showAnswer}
-                placeholder="答えを入力してください"
-                className="w-full p-2 border border-gray-300 rounded"
-              />
-            </div>
+            {/* 問題タイプに応じた入力方法の表示 */}
+            {selectedQuestionType === 1 ? (
+              <NumberButtons onSelect={setUserAnswer} disabled={showAnswer} />
+            ) : (selectedQuestionType === 2 || selectedQuestionType === 4) ? (
+              <DegreeButtons onSelect={setUserAnswer} disabled={showAnswer} />
+            ) : (
+              <div className="mb-4">
+                <input
+                  type="text"
+                  value={userAnswer}
+                  onChange={(e) => setUserAnswer(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={showAnswer}
+                  placeholder="答えを入力してください"
+                  className="w-full p-2 border border-gray-300 rounded"
+                />
+              </div>
+            )}
+
+            {/* 選択された回答の表示 (ボタン選択の場合) */}
+            {(selectedQuestionType === 1 || selectedQuestionType === 2 || selectedQuestionType === 4) && userAnswer && !showAnswer && (
+              <div className="mb-4 text-center p-2 bg-blue-50 rounded">
+                選択: <strong>{userAnswer}</strong>
+              </div>
+            )}
             
             {!showAnswer && (
               <button
@@ -389,7 +457,7 @@
         </div>
       );
     };
-
+    
     // React 18の新しいレンダリング方法
     const root = ReactDOM.createRoot(document.getElementById('app'));
     root.render(<MusicTheoryQuiz />);
