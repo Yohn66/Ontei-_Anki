@@ -1,4 +1,11 @@
-<!DOCTYPE html>
+// 問題3の選択肢をシャープ/フラットで統一
+      const getFormattedNoteOption = (notes) => {
+        if (Array.isArray(notes)) {
+          // 特殊な文字を置き換えずにそのまま表示
+          return notes.join('/');
+        }
+        return notes;
+      };<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -17,24 +24,24 @@
   <script type="text/babel">
     // 音と数字のマッピング
     const noteToNumber = {
-      'C': 0, 'C#': 1, 'Db': 1, 'D♭': 1, 'D': 2, 'D#': 3, 'Eb': 3, 'E♭': 3, 'E': 4,
-      'F': 5, 'F#': 6, 'Gb': 6, 'G♭': 6, 'G': 7, 'G#': 8, 'Ab': 8, 'A♭': 8, 'A': 9,
-      'A#': 10, 'Bb': 10, 'B♭': 10, 'B': 11
+      'C': 0, 'C♯': 1, 'D♭': 1, 'D': 2, 'D♯': 3, 'E♭': 3, 'E': 4,
+      'F': 5, 'F♯': 6, 'G♭': 6, 'G': 7, 'G♯': 8, 'A♭': 8, 'A': 9,
+      'A♯': 10, 'B♭': 10, 'B': 11
     };
     
     // 数字から音へのマッピング
     const numberToNote = {
       0: 'C', 
-      1: ['C#', 'D♭'], 
+      1: ['C♯', 'D♭'], 
       2: 'D', 
-      3: ['D#', 'E♭'], 
+      3: ['D♯', 'E♭'], 
       4: 'E',
       5: 'F', 
-      6: ['F#', 'G♭'], 
+      6: ['F♯', 'G♭'], 
       7: 'G', 
-      8: ['G#', 'A♭'], 
+      8: ['G♯', 'A♭'], 
       9: 'A',
-      10: ['A#', 'B♭'], 
+      10: ['A♯', 'B♭'], 
       11: 'B'
     };
     
@@ -43,7 +50,7 @@
       { number: 0, relations: ['1度', '完全1度'] },
       { number: 1, relations: ['短2度', '♭9th'] },
       { number: 2, relations: ['2度', '長2度', '9th'] },
-      { number: 3, relations: ['短3度', '#9th', 'm3'] },
+      { number: 3, relations: ['短3度', '♯9th', 'm3'] },
       { number: 4, relations: ['3度', '長3度', 'M3', '△3', '3rd'] },
       { number: 5, relations: ['4度', '完全4度', '11th'] },
       { number: 6, relations: ['増4度', '減5度', '♭5'] },
@@ -184,18 +191,14 @@
           const resultNumber = (baseNumber + relationNumber) % 12;
           
           // 結果を適切な形式にフォーマット
-          let resultNoteDisplay;
-          if (Array.isArray(numberToNote[resultNumber])) {
-            resultNoteDisplay = numberToNote[resultNumber].join('/');
-          } else {
-            resultNoteDisplay = numberToNote[resultNumber];
-          }
+          let resultNoteDisplay = getFormattedNoteOption(numberToNote[resultNumber]);
           
           // noteOptionsの形式に合わせる
           const matchingNoteOption = noteOptions.find(opt => {
             if (opt.includes('/')) {
               const parts = opt.split('/');
-              return parts.some(p => numberToNote[resultNumber].includes(p));
+              return Array.isArray(numberToNote[resultNumber]) &&
+                     (parts[0] === numberToNote[resultNumber][0] || parts[1] === numberToNote[resultNumber][1]);
             } else {
               return opt === numberToNote[resultNumber];
             }
@@ -261,11 +264,10 @@
       return normalized;
     };
     
-    // ♭とbの変換、#と＃の変換を行う関数
+    // ♭とbの変換、#と＃の変換を行う関数 - 選択制になったため不要
     const convertNotation = (answer) => {
-      // ♭をbに、♯を#に変換
-      let converted = answer.replace(/♭/g, 'b').replace(/♯/g, '#');
-      return converted;
+      // 変換せずそのまま返す
+      return answer;
     };
     
     // 回答比較関数
