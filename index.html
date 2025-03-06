@@ -353,6 +353,7 @@
     const MusicTheoryQuiz = () => {
       const [selectedQuestionType, setSelectedQuestionType] = React.useState(null);
       const [currentQuestion, setCurrentQuestion] = React.useState(null);
+      const [previousQuestion, setPreviousQuestion] = React.useState(null);
       const [userAnswer, setUserAnswer] = React.useState('');
       const [feedback, setFeedback] = React.useState('');
       const [showAnswer, setShowAnswer] = React.useState(false);
@@ -404,7 +405,25 @@
           setCurrentQuestionSubType(null);
         }
         
-        const newQuestion = questionType.generateQuestion();
+        // 前回と同じ問題が出ないようにする
+        let newQuestion;
+        let attempts = 0;
+        const maxAttempts = 10; // 最大試行回数
+        
+        do {
+          newQuestion = questionType.generateQuestion();
+          attempts++;
+          // 以下の条件で新しい問題とする:
+          // 1. 前回の問題がない場合
+          // 2. 問題文が前回と異なる場合
+          // 3. 最大試行回数に達した場合（無限ループ防止）
+        } while (
+          previousQuestion && 
+          newQuestion.question === previousQuestion.question && 
+          attempts < maxAttempts
+        );
+        
+        setPreviousQuestion(newQuestion);
         setCurrentQuestion(newQuestion);
         setUserAnswer('');
         setFeedback('');
