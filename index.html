@@ -38,45 +38,57 @@
       11: 'B'
     };
     
-    // 関係性のマッピング（度数）
+    // 関係性のマッピング（度数）- "-◯"表記を削除
     const relationMapping = [
       { number: 0, relations: ['1度', '完全1度'] },
       { number: 1, relations: ['短2度', '♭9th'] },
       { number: 2, relations: ['2度', '長2度', '9th'] },
-      { number: 3, relations: ['短3度', '#9th', 'm3', '-3'] },
+      { number: 3, relations: ['短3度', '#9th', 'm3'] },
       { number: 4, relations: ['3度', '長3度', 'M3', '△3', '3rd'] },
       { number: 5, relations: ['4度', '完全4度', '11th'] },
       { number: 6, relations: ['増4度', '減5度', '♭5'] },
       { number: 7, relations: ['5度', '完全5度', '5th'] },
       { number: 8, relations: ['増5度', '短6度', '♭13th'] },
       { number: 9, relations: ['6度', '長6度', '13th', '6th'] },
-      { number: 10, relations: ['増6度', '短7度', 'm7', '-7'] },
+      { number: 10, relations: ['短7度', 'm7'] },
       { number: 11, relations: ['7度', '長7度', 'M7', '△7'] },
       { number: 12, relations: ['8度', '完全8度'] },
     ];
 
-    // 度数選択肢
+    // 問題2と4用の度数選択肢（指定されたもののみ）
     const degreeOptions = [
-      "1度", "完全1度",
-      "短2度", 
-      "長2度", "2度",
+      "1度",
+      "短2度",
+      "2度",
       "短3度",
-      "長3度", "3度",
-      "完全4度", "4度",
-      "増4度", "減5度",
-      "完全5度", "5度",
-      "増5度", "短6度",
-      "長6度", "6度",
-      "増6度", "短7度",
-      "長7度", "7度",
-      "完全8度", "8度"
+      "3度",
+      "4度",
+      "増4度/減5度",
+      "5度",
+      "短6度",
+      "6度",
+      "短7度",
+      "7度"
+    ];
+    
+    // 問題3用の音名選択肢
+    const noteOptions = [
+      "C",
+      "C♯/D♭",
+      "D",
+      "D♯/E♭",
+      "E",
+      "F",
+      "F♯/G♭",
+      "G",
+      "G♯/A♭",
+      "A",
+      "A♯/B♭",
+      "B"
     ];
     
     // 全ての音のリスト
     const allNotes = Object.keys(noteToNumber);
-    
-    // 全ての関係のリスト（度数など）
-    const allRelations = relationMapping.flatMap(item => item.relations);
     
     // 問題タイプの説明
     const questionTypeInfo = {
@@ -124,10 +136,26 @@
           const number = noteToNumber[randomNote];
           const mod12 = number % 12;
           const relations = relationMapping.find(item => item.number === mod12).relations;
+          
+          // degreeOptionsに含まれる度数のみを答えとして許容する
+          const validRelations = relations.filter(rel => 
+            degreeOptions.includes(rel) || 
+            (rel === "増4度" || rel === "減5度") && degreeOptions.includes("増4度/減5度")
+          );
+          
+          // 増4度/減5度の特別処理
+          const formattedRelations = validRelations.map(rel => {
+            if (rel === "増4度" || rel === "減5度") return "増4度/減5度";
+            return rel;
+          });
+          
+          // 重複を除去
+          const uniqueRelations = [...new Set(formattedRelations)];
+          
           return {
             question: `${randomNote}の度数は何？`,
-            answer: relations.join('、'),
-            explanation: `${randomNote}の度数は${relations.join('、')}です。`
+            answer: uniqueRelations.join('、'),
+            explanation: `${randomNote}の度数は${uniqueRelations.join('、')}です。`
           };
         }
       },
@@ -136,21 +164,47 @@
         template: '{note}の{relation}は何？',
         generateQuestion: () => {
           const randomNote = allNotes[Math.floor(Math.random() * allNotes.length)];
-          const randomRelationObj = relationMapping[Math.floor(Math.random() * relationMapping.length)];
-          const randomRelation = randomRelationObj.relations[Math.floor(Math.random() * randomRelationObj.relations.length)];
+          // degreeOptionsに含まれる度数から選択
+          const filteredDegrees = degreeOptions.filter(deg => deg !== "増4度/減5度");
+          const randomDegree = filteredDegrees[Math.floor(Math.random() * filteredDegrees.length)];
+          
+          // 増4度/減5度の特別処理
+          let relationNumber;
+          if (randomDegree === "増4度/減5度") {
+            relationNumber = 6; // 増4度/減5度の数値
+          } else {
+            // 対応する関係性を見つける
+            const relation = relationMapping.find(item => 
+              item.relations.includes(randomDegree)
+            );
+            relationNumber = relation ? relation.number : 0;
+          }
           
           const baseNumber = noteToNumber[randomNote];
-          const relationNumber = randomRelationObj.number;
           const resultNumber = (baseNumber + relationNumber) % 12;
           
-          const resultNotes = Array.isArray(numberToNote[resultNumber]) 
-            ? numberToNote[resultNumber].join('、')
-            : numberToNote[resultNumber];
+          // 結果を適切な形式にフォーマット
+          let resultNoteDisplay;
+          if (Array.isArray(numberToNote[resultNumber])) {
+            resultNoteDisplay = numberToNote[resultNumber].join('/');
+          } else {
+            resultNoteDisplay = numberToNote[resultNumber];
+          }
+          
+          // noteOptionsの形式に合わせる
+          const matchingNoteOption = noteOptions.find(opt => {
+            if (opt.includes('/')) {
+              const parts = opt.split('/');
+              return parts.some(p => numberToNote[resultNumber].includes(p));
+            } else {
+              return opt === numberToNote[resultNumber];
+            }
+          });
           
           return {
-            question: `${randomNote}の${randomRelation}は何？`,
-            answer: resultNotes,
-            explanation: `${randomNote}から${randomRelation}は${resultNotes}です。基準の音${randomNote}(${baseNumber})に${randomRelation}(${relationNumber})を足すと${baseNumber + relationNumber}となり、12で割った余り${resultNumber}の音${resultNotes}になります。`
+            question: `${randomNote}の${randomDegree}は何？`,
+            answer: matchingNoteOption,
+            explanation: `${randomNote}から${randomDegree}は${matchingNoteOption}です。基準の音${randomNote}(${baseNumber})に${randomDegree}(${relationNumber})を足すと${baseNumber + relationNumber}となり、12で割った余り${resultNumber}の音${resultNoteDisplay}になります。`
           };
         }
       },
@@ -170,10 +224,25 @@
           
           const relations = relationMapping.find(item => item.number === diff).relations;
           
+          // degreeOptionsに含まれる度数のみを答えとして許容する
+          const validRelations = relations.filter(rel => 
+            degreeOptions.includes(rel) || 
+            (rel === "増4度" || rel === "減5度") && degreeOptions.includes("増4度/減5度")
+          );
+          
+          // 増4度/減5度の特別処理
+          const formattedRelations = validRelations.map(rel => {
+            if (rel === "増4度" || rel === "減5度") return "増4度/減5度";
+            return rel;
+          });
+          
+          // 重複を除去
+          const uniqueRelations = [...new Set(formattedRelations)];
+          
           return {
             question: `${randomNote1}から見て${randomNote2}は何度？`,
-            answer: relations.join('、'),
-            explanation: `${randomNote1}(${number1})から見て${randomNote2}(${number2})は${relations.join('、')}です。計算方法：${number2 >= number1 ? `${number2} - ${number1} = ${diff}` : `${number2} + 12 - ${number1} = ${diff}`}`
+            answer: uniqueRelations.join('、'),
+            explanation: `${randomNote1}(${number1})から見て${randomNote2}(${number2})は${uniqueRelations.join('、')}です。計算方法：${number2 >= number1 ? `${number2} - ${number1} = ${diff}` : `${number2} + 12 - ${number1} = ${diff}`}`
           };
         }
       }
@@ -225,7 +294,7 @@
       });
     };
 
-    // 数字ボタンコンポーネント
+    // 数字ボタンコンポーネント - 選択と同時に回答チェック
     const NumberButtons = ({ onSelect, disabled }) => {
       const numbers = Array.from({ length: 12 }, (_, i) => i);
       
@@ -245,7 +314,7 @@
       );
     };
 
-    // 度数選択ボタンコンポーネント
+    // 度数選択ボタンコンポーネント - 選択と同時に回答チェック
     const DegreeButtons = ({ onSelect, disabled }) => {
       return (
         <div className="grid grid-cols-2 gap-2 mb-4 max-h-64 overflow-y-auto">
@@ -263,6 +332,24 @@
       );
     };
     
+    // 音名選択ボタンコンポーネント - 選択と同時に回答チェック
+    const NoteButtons = ({ onSelect, disabled }) => {
+      return (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {noteOptions.map(note => (
+            <button
+              key={note}
+              onClick={() => onSelect(note)}
+              disabled={disabled}
+              className="bg-yellow-100 hover:bg-yellow-200 py-2 px-2 rounded text-sm disabled:bg-gray-200 disabled:text-gray-500"
+            >
+              {note}
+            </button>
+          ))}
+        </div>
+      );
+    };
+    
     const MusicTheoryQuiz = () => {
       const [selectedQuestionType, setSelectedQuestionType] = React.useState(null);
       const [currentQuestion, setCurrentQuestion] = React.useState(null);
@@ -272,6 +359,35 @@
       const [score, setScore] = React.useState({ correct: 0, total: 0 });
       const [history, setHistory] = React.useState([]);
       const [isHome, setIsHome] = React.useState(true);
+      const [currentQuestionSubType, setCurrentQuestionSubType] = React.useState(null);
+      
+      // 回答を処理する関数
+      const handleAnswer = (answer) => {
+        setUserAnswer(answer);
+        
+        // すぐに回答チェック
+        const isCorrect = compareAnswers(answer, currentQuestion.answer);
+        
+        setScore(prev => ({
+          correct: isCorrect ? prev.correct + 1 : prev.correct,
+          total: prev.total + 1
+        }));
+        
+        setHistory(prev => [...prev, {
+          question: currentQuestion.question,
+          userAnswer: answer,
+          correctAnswer: currentQuestion.answer,
+          isCorrect
+        }]);
+        
+        if (isCorrect) {
+          setFeedback('正解です！');
+        } else {
+          setFeedback(`不正解です。正解は「${currentQuestion.answer}」です。`);
+        }
+        
+        setShowAnswer(true);
+      };
       
       // 問題を生成する関数
       const generateNewQuestion = () => {
@@ -279,10 +395,13 @@
         
         if (selectedQuestionType === 5) {
           // ランダムに問題タイプを選択
-          questionType = questionTypes[Math.floor(Math.random() * questionTypes.length)];
+          const randomType = Math.floor(Math.random() * 4) + 1;
+          questionType = questionTypes[randomType - 1];
+          setCurrentQuestionSubType(randomType);
         } else {
           // 選択された問題タイプを使用
           questionType = questionTypes[selectedQuestionType - 1];
+          setCurrentQuestionSubType(null);
         }
         
         const newQuestion = questionType.generateQuestion();
@@ -307,42 +426,39 @@
         }
       }, [selectedQuestionType, isHome]);
       
-      // 回答をチェックする関数
-      const checkAnswer = () => {
-        const isCorrect = compareAnswers(userAnswer, currentQuestion.answer);
-        
-        setScore(prev => ({
-          correct: isCorrect ? prev.correct + 1 : prev.correct,
-          total: prev.total + 1
-        }));
-        
-        setHistory(prev => [...prev, {
-          question: currentQuestion.question,
-          userAnswer,
-          correctAnswer: currentQuestion.answer,
-          isCorrect
-        }]);
-        
-        if (isCorrect) {
-          setFeedback('正解です！');
-        } else {
-          setFeedback(`不正解です。正解は「${currentQuestion.answer}」です。`);
-        }
-        
-        setShowAnswer(true);
-      };
-      
-      // Enterキーを押したときに回答チェック
-      const handleKeyPress = (e) => {
-        if (e.key === 'Enter' && userAnswer && !showAnswer) {
-          checkAnswer();
-        }
-      };
-      
       // ホーム画面に戻る
       const goHome = () => {
         setIsHome(true);
         setSelectedQuestionType(null);
+      };
+      
+      // 現在の問題タイプを取得（ランダム出題の場合はサブタイプを使用）
+      const getCurrentQuestionType = () => {
+        if (selectedQuestionType === 5 && currentQuestionSubType) {
+          return currentQuestionSubType;
+        }
+        return selectedQuestionType;
+      };
+      
+      // 入力方式を問題タイプに応じて表示する関数
+      const renderInputMethod = () => {
+        const currentType = getCurrentQuestionType();
+        
+        if (showAnswer) {
+          return null;
+        }
+        
+        switch (currentType) {
+          case 1:
+            return <NumberButtons onSelect={handleAnswer} disabled={showAnswer} />;
+          case 2:
+          case 4:
+            return <DegreeButtons onSelect={handleAnswer} disabled={showAnswer} />;
+          case 3:
+            return <NoteButtons onSelect={handleAnswer} disabled={showAnswer} />;
+          default:
+            return null;
+        }
       };
       
       // ホーム画面の表示
@@ -374,7 +490,11 @@
             >
               ホームに戻る
             </button>
-            <h1 className="text-xl font-bold text-center">{questionTypeInfo[selectedQuestionType].title}</h1>
+            <h1 className="text-xl font-bold text-center">
+              {selectedQuestionType === 5 && currentQuestionSubType
+                ? questionTypeInfo[currentQuestionSubType].title
+                : questionTypeInfo[selectedQuestionType].title}
+            </h1>
             <div className="w-20"></div> {/* スペースのためのダミー要素 */}
           </div>
           
@@ -382,41 +502,7 @@
             <p className="text-lg font-medium mb-2">問題:</p>
             <p className="text-xl mb-4">{currentQuestion?.question}</p>
             
-            {/* 問題タイプに応じた入力方法の表示 */}
-            {selectedQuestionType === 1 ? (
-              <NumberButtons onSelect={setUserAnswer} disabled={showAnswer} />
-            ) : (selectedQuestionType === 2 || selectedQuestionType === 4) ? (
-              <DegreeButtons onSelect={setUserAnswer} disabled={showAnswer} />
-            ) : (
-              <div className="mb-4">
-                <input
-                  type="text"
-                  value={userAnswer}
-                  onChange={(e) => setUserAnswer(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  disabled={showAnswer}
-                  placeholder="答えを入力してください"
-                  className="w-full p-2 border border-gray-300 rounded"
-                />
-              </div>
-            )}
-
-            {/* 選択された回答の表示 (ボタン選択の場合) */}
-            {(selectedQuestionType === 1 || selectedQuestionType === 2 || selectedQuestionType === 4) && userAnswer && !showAnswer && (
-              <div className="mb-4 text-center p-2 bg-blue-50 rounded">
-                選択: <strong>{userAnswer}</strong>
-              </div>
-            )}
-            
-            {!showAnswer && (
-              <button
-                onClick={checkAnswer}
-                disabled={!userAnswer}
-                className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 disabled:bg-gray-400"
-              >
-                回答する
-              </button>
-            )}
+            {renderInputMethod()}
             
             {showAnswer && (
               <div className="mt-4">
